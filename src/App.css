@@ -1,0 +1,36 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.container {
+  margin-top: 50px;
+}
+
+.form-inline .form-control {
+  width: auto;
+  display: inline;
+}
+
+.ml-2 {
+  margin-left: 10px;
+}
+
+.mb-3 {
+  margin-bottom: 20px;
+}
+
+.mt-4 {
+  margin-top: 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.badge-success {
+  background-color: #28a745;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+}
