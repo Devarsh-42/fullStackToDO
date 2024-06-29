@@ -1,30 +1,36 @@
-from flask import jsonify, request
-from app import app
+import os
+
+from flask import Blueprint, jsonify, request, send_from_directory
 from app.models import Task
 
-# Create Task
-@app.route('/tasks', methods=['POST'])
+task_bp = Blueprint('task', __name__)
+
+@task_bp.route('/')
+@task_bp.route('/<path:path>')
+def serve_frontend(path=None):
+    if path and os.path.exists(f'../frontend/build/{path}'):
+        return send_from_directory('../frontend/build', path)
+    return send_from_directory('../frontend/build', 'index.html')
+
+@task_bp.route('/tasks', methods=['POST'])
 def create_task():
     data = request.json
     task = Task(**data).save()
     return jsonify(task), 201
 
-# Get All Tasks
-@app.route('/tasks', methods=['GET'])
+@task_bp.route('/tasks', methods=['GET'])
 def get_tasks():
     tasks = Task.objects().all()
     return jsonify(tasks), 200
 
-# Get Task by ID
-@app.route('/tasks/<task_id>', methods=['GET'])
+@task_bp.route('/tasks/<task_id>', methods=['GET'])
 def get_task(task_id):
     task = Task.objects(id=task_id).first()
     if not task:
         return jsonify({'error': 'Task not found'}), 404
     return jsonify(task), 200
 
-# Update Task
-@app.route('/tasks/<task_id>', methods=['PUT'])
+@task_bp.route('/tasks/<task_id>', methods=['PUT'])
 def update_task(task_id):
     data = request.json
     task = Task.objects(id=task_id).first()
@@ -34,8 +40,7 @@ def update_task(task_id):
     updated_task = Task.objects(id=task_id).first()
     return jsonify(updated_task), 200
 
-# Delete Task
-@app.route('/tasks/<task_id>', methods=['DELETE'])
+@task_bp.route('/tasks/<task_id>', methods=['DELETE'])
 def delete_task(task_id):
     task = Task.objects(id=task_id).first()
     if not task:

@@ -30,62 +30,138 @@ function App() {
         fetchTasks();
     }, []);
 
+
     const fetchTasks = async () => {
-        const response = await axios.get('http://localhost:5000/tasks', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        setTasks(response.data);
+        try {
+            const response = await axios.get('http://localhost:5000/tasks', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            setTasks(response.data);
+        } catch (error) {
+            console.error('Error fetching tasks:', error.response);
+        }
     };
 
     const handleLogin = async () => {
+    try {
         const response = await axios.post('http://localhost:5000/login', { username, password });
         setToken(response.data.access_token);
         setIsAuthenticated(true);
-    };
+        localStorage.setItem('authToken', response.data.access_token); // Store token in local storage
+    } catch (error) {
+        if (error.response) {
+            // Server responded with a status code outside of 2xx range
+            console.error('Error logging in:', error.response.data);
+        } else if (error.request) {
+            // Request was made but no response was received
+            console.error('No response received:', error.request);
+        } else {
+            // Something happened in setting up the request that triggered an error
+            console.error('Error setting up the request:', error.message);
+        }
+    }
+};
+
 
     const handleRegister = async () => {
-        await axios.post('http://localhost:5000/register', { username, password });
-    };
+    try {
+        const response = await axios.post('http://localhost:5000/register', { username, password });
+        console.log('Response:', response.data);
+        // Handle response as needed
+    } catch (error) {
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // outside of the 2xx range
+            console.error('Error data:', error.response.data);
+            console.error('Error status:', error.response.status);
+            console.error('Error headers:', error.response.headers);
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No response received:', error.request);
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error message:', error.message);
+        }
+        console.error('Error config:', error.config);
+    }
+};
+
+
 
     const handleLogout = async () => {
-        await axios.post('http://localhost:5000/logout', {}, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        try {
+            const authToken = localStorage.getItem('authToken'); // Retrieve the token from local storage
+            if (!authToken) {
+                console.error('No token found.');
+                return;
             }
-        });
-        setIsAuthenticated(false);
-        setToken('');
+
+            const response = await axios.post('http://localhost:5000/logout', { token: authToken }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Logged out successfully:', response.data);
+            localStorage.removeItem('authToken'); // Remove the token from local storage
+            setIsAuthenticated(false); // Update authentication state
+            setToken(''); // Clear token state
+            setTasks([]); // Clear tasks state
+            // Redirect or perform any post-logout actions here
+        } catch (error) {
+            console.error('Error logging out:', error.response.data);
+        }
     };
 
+
     const handleCreateTask = async () => {
-        await axios.post('http://localhost:5000/tasks', { title: newTask }, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        setNewTask('');
-        fetchTasks();
+        try {
+            const newTaskData = {
+                title: newTask,
+                priority: 'low',
+                completed: false
+            };
+            console.log('Sending task:', newTaskData);
+            const response = await axios.post('http://localhost:5000/tasks', newTaskData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            console.log('Response:', response.data);
+            setNewTask('');
+            fetchTasks();
+        } catch (error) {
+            console.error('Error creating task:', error.response.data);
+        }
     };
 
     const handleEditTask = async () => {
-        await axios.put(`http://localhost:5000/tasks/${editTask.id}`, editTask, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        setEditTask(null);
-        fetchTasks();
+        try {
+            await axios.put(`http://localhost:5000/tasks/${editTask.id}`, editTask, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            setEditTask(null);
+            fetchTasks();
+        } catch (error) {
+            console.error('Error editing task:', error.response.data);
+        }
     };
 
     const handleDeleteTask = async (taskId) => {
-        await axios.delete(`http://localhost:5000/tasks/${taskId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        fetchTasks();
+        try {
+            await axios.delete(`http://localhost:5000/tasks/${taskId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            fetchTasks();
+        } catch (error) {
+            console.error('Error deleting task:', error.response.data);
+        }
     };
 
     const openEditModal = (task) => {
@@ -102,8 +178,8 @@ function App() {
 
     const filteredTasks = tasks.filter(task => {
         return (!filters.status || task.completed === (filters.status === 'completed')) &&
-               (!filters.priority || task.priority === filters.priority) &&
-               (!filters.assignee || task.assignee_id === filters.assignee);
+            (!filters.priority || task.priority === filters.priority) &&
+            (!filters.assignee || task.assignee_id === filters.assignee);
     });
 
     return (
@@ -135,18 +211,18 @@ function App() {
                             <h3 className="mt-4">Tasks</h3>
                             <Form.Group controlId="formBasicFilter" className="mb-3">
                                 <Form.Label>Filters</Form.Label>
-                                <Form.Control as="select" value={filters.status} onChange={(e) => setFilters({...filters, status: e.target.value})}>
+                                <Form.Control as="select" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
                                     <option value="">All</option>
                                     <option value="completed">Completed</option>
                                     <option value="incomplete">Incomplete</option>
                                 </Form.Control>
-                                <Form.Control as="select" value={filters.priority} onChange={(e) => setFilters({...filters, priority: e.target.value})} className="mt-2">
+                                <Form.Control as="select" value={filters.priority} onChange={(e) => setFilters({ ...filters, priority: e.target.value })} className="mt-2">
                                     <option value="">All Priorities</option>
                                     <option value="high">High</option>
                                     <option value="medium">Medium</option>
                                     <option value="low">Low</option>
                                 </Form.Control>
-                                <Form.Control as="select" value={filters.assignee} onChange={(e) => setFilters({...filters, assignee: e.target.value})} className="mt-2">
+                                <Form.Control as="select" value={filters.assignee} onChange={(e) => setFilters({ ...filters, assignee: e.target.value })} className="mt-2">
                                     <option value="">All Assignees</option>
                                     {tasks.map(task => (
                                         <option key={task.assignee_id} value={task.assignee_id}>{task.assignee_id}</option>
